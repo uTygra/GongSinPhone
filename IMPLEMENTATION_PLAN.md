@@ -116,6 +116,15 @@ scripts/
 └── poc-check-device.ts   # 기기 상태 조회
 ```
 
+### PoC에서 배운 것 (실제 구현 시 반영 필요)
+
+| 발견한 문제 | 원인 | MVP 대응 |
+|---|---|---|
+| QR "잘못된 코드" | `token.value` 대신 `token.qrCode` 사용해야 함 | `createEnrollmentToken()`에서 `qrCode` 필드 반환 |
+| 기기 등록 한도 초과 | 반복 스캔 시 토큰 슬롯 소진 | 토큰 발급 전 기존 토큰 자동 삭제 |
+| AMAPI 정책 필드 오류 | `developerSettings`, `untrustedAppsPolicy` 최신 API에서 다름 | MVP에서 정확한 필드명 재확인 필요 |
+| 엔터프라이즈 쿼터 | 기본 쿼터가 낮음 | GCP 콘솔에서 사전 증가 요청 |
+
 ### PoC 성공 기준
 
 1. QR 스캔 후 키오스크 모드 진입 확인
@@ -145,8 +154,11 @@ scripts/
 - [ ] 회원가입 시 엔터프라이즈 자동 생성
 - [ ] 정책 3벌 자동 등록 (study / free / expired)
 - [ ] `POST /api/devices/enroll` — 등록 토큰 발급 + QR 생성
+  - [ ] **기기 등록 토큰 발급 전 기존 미사용 토큰 자동 삭제** (슬롯 소진 방지)
+  - [ ] 1시간 내 미연결 토큰 만료 처리 cron 추가
 - [ ] `POST /api/devices/webhook` — Pub/Sub 이벤트 수신 처리
 - [ ] `PATCH /api/devices/[id]/policy` — 정책 즉시 변경
+- [ ] **GCP 콘솔 → Android Management API → Quotas → Device enrollments per enterprise 증가 요청** (서비스 오픈 전 필수)
 
 #### Week 3-4: 부모 콘솔 UI
 - [ ] `/dashboard` — 기기 현황 페이지 (상태·모드·배터리)
