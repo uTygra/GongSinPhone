@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공신폰 SaaS — 삼성 갤럭시 구현 전체 계획</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root {
+  --bg: #0E1117;
+  --surface: #161B25;
+  --surface2: #1E2535;
+  --border: #2A3347;
+  --border2: #374057;
+  --text: #E8EAF0;
+  --muted: #7B859A;
+  --dim: #4A5568;
+  --green: #3DD68C;
+  --green-soft: rgba(61,214,140,.12);
+  --blue: #60A5FA;
+  --blue-soft: rgba(96,165,250,.1);
+  --amber: #FBBF24;
+  --amber-soft: rgba(251,191,36,.1);
+  --red: #F87171;
+  --red-soft: rgba(248,113,113,.1);
+  --purple: #A78BFA;
+  --purple-soft: rgba(167,139,250,.1);
+  --cyan: #22D3EE;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+.disp { font-family: 'Space Grotesk', 'Pretendard', sans-serif; }
+a { color: var(--green); text-decoration: none; }
+
+/* ── LAYOUT ── */
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(14,17,23,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.nav-inner {
+  display: flex; align-items: center; gap: 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-inner a {
+  flex-shrink: 0;
+  padding: 14px 18px;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.nav-inner a:hover, .nav-inner a.active { color: var(--green); border-color: var(--green); }
+
+/* ── HERO ── */
+.hero {
+  padding: 80px 0 64px;
+  border-bottom: 1px solid var(--border);
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--green-soft); border: 1px solid rgba(61,214,140,.25);
+  color: var(--green); border-radius: 999px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .06em;
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(32px, 5.5vw, 54px);
+  font-weight: 700; line-height: 1.08;
+  letter-spacing: -.025em;
+}
+.hero h1 .accent { color: var(--green); }
+.hero .tagline {
+  font-size: 18px; color: #9BAAB8;
+  max-width: 640px; margin-top: 20px; line-height: 1.6;
+}
+.hero-pills {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 7px 14px;
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  color: var(--text); font-weight: 500;
+}
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ── SECTION ── */
+section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+.sec-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--green); font-weight: 600; margin-bottom: 10px;
+}
+h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(24px, 3.5vw, 34px);
+  font-weight: 700; letter-spacing: -.02em; line-height: 1.15;
+}
+h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 19px; font-weight: 600; margin: 40px 0 10px;
+  color: var(--text); letter-spacing: -.01em;
+}
+p { margin: 12px 0; color: #9BAAB8; }
+p strong { color: var(--text); }
+
+/* callouts */
+.callout {
+  border-left: 3px solid var(--green);
+  background: var(--green-soft);
+  padding: 14px 18px; border-radius: 0 10px 10px 0;
+  margin: 20px 0; font-size: 14.5px; color: var(--text);
+}
+.callout.warn { border-color: var(--amber); background: var(--amber-soft); }
+.callout.danger { border-color: var(--red); background: var(--red-soft); }
+.callout.info { border-color: var(--blue); background: var(--blue-soft); }
+.callout .cl { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; color: var(--green); }
+.callout.warn .cl { color: var(--amber); }
+.callout.danger .cl { color: var(--red); }
+.callout.info .cl { color: var(--blue); }
+
+/* cards */
+.cards { display: grid; gap: 14px; margin: 24px 0; }
+.cards.c2 { grid-template-columns: 1fr 1fr; }
+.cards.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.card {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 22px;
+}
+.card .ck { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: .06em; margin-bottom: 6px; }
+.card h4 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.card p { font-size: 13.5px; margin: 4px 0; }
+.card ul { font-size: 13.5px; color: #9BAAB8; padding-left: 18px; }
+.card li { margin: 4px 0; }
+.card .price { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--green); margin-top: 10px; }
+
+/* table */
+.tbl-wrap { overflow-x: auto; margin: 24px 0; border: 1px solid var(--border2); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 480px; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: top; }
+thead th { background: var(--surface2); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+td strong { color: var(--text); }
+tbody tr:hover { background: rgba(255,255,255,.02); }
+
+/* badge */
+.badge { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px; }
+.bg { background: var(--green-soft); color: var(--green); }
+.bb { background: var(--blue-soft); color: var(--blue); }
+.ba { background: var(--amber-soft); color: var(--amber); }
+.br { background: var(--red-soft); color: var(--red); }
+.bp { background: var(--purple-soft); color: var(--purple); }
+
+/* code block */
+pre {
+  background: #0B0D13; border: 1px solid var(--border2);
+  border-radius: 12px; padding: 20px 22px; overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  line-height: 1.75; margin: 20px 0; color: #CBD5E1;
+}
+.cm { color: #4A5568; }
+.ck2 { color: var(--blue); }
+.cv { color: var(--green); }
+.cs { color: #F9A8D4; }
+.cn { color: var(--amber); }
+.ct { color: var(--cyan); }
+
+/* phase roadmap */
+.phases { display: flex; flex-direction: column; gap: 0; margin: 32px 0; }
+.phase {
+  display: grid; grid-template-columns: 180px 1fr;
+  border: 1px solid var(--border2); border-radius: 14px;
+  overflow: hidden; margin-bottom: 14px;
+}
+.phase-left {
+  background: var(--surface2); padding: 22px 20px;
+  display: flex; flex-direction: column; gap: 8px;
+  border-right: 1px solid var(--border2);
+}
+.phase-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+.phase-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); }
+.phase-dur { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); margin-top: 4px; }
+.phase-right { background: var(--surface); padding: 22px 24px; }
+.phase-right h4 { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; margin: 0 0 8px; color: var(--text); }
+.phase-right ul { font-size: 13.5px; color: #9BAAB8; padding-left: 18px; }
+.phase-right li { margin: 5px 0; }
+.phase-right li strong { color: var(--text); }
+.phase-tasks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.task { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+
+/* stack diagram */
+.stack { display: flex; flex-direction: column; gap: 8px; margin: 24px 0; }
+.sl { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; }
+.sl .lname { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-align: right; letter-spacing: .04em; }
+.sl .lbar { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lchip { border-radius: 6px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.lc-green { background: var(--green-soft); color: var(--green); border: 1px solid rgba(61,214,140,.25); }
+.lc-blue { background: var(--blue-soft); color: var(--blue); border: 1px solid rgba(96,165,250,.2); }
+.lc-amber { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(251,191,36,.2); }
+.lc-purple { background: var(--purple-soft); color: var(--purple); border: 1px solid rgba(167,139,250,.2); }
+.lc-red { background: var(--red-soft); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+.lc-gray { background: var(--surface); color: var(--muted); border: 1px solid var(--border2); }
+
+/* tabs */
+.tabs-head { display: flex; border-bottom: 1px solid var(--border2); margin-top: 28px; }
+.tab-btn {
+  padding: 10px 20px; font-size: 13px; font-weight: 600;
+  color: var(--muted); border-bottom: 2px solid transparent;
+  cursor: pointer; transition: all .15s;
+  font-family: 'JetBrains Mono', monospace;
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+.tab-pane { display: none; padding-top: 20px; }
+.tab-pane.active { display: block; }
+
+/* checklist */
+.chk { list-style: none; padding: 0; margin: 16px 0; }
+.chk li {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 14px; border-radius: 8px; font-size: 14px;
+  border: 1px solid var(--border); margin-bottom: 7px;
+  background: var(--surface); cursor: pointer;
+  transition: background .1s;
+}
+.chk li:hover { background: var(--surface2); }
+.chk li.done { opacity: .5; }
+.chk li.done span { text-decoration: line-through; }
+.chk .cb { width: 18px; height: 18px; border: 2px solid var(--border2); border-radius: 4px; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+.chk li.done .cb { background: var(--green); border-color: var(--green); }
+
+/* progress bar */
+.prog-wrap { margin: 20px 0; }
+.prog-label { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.prog-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width .4s ease; }
+
+/* cost table highlight */
+.cost-total td { font-weight: 700; color: var(--green); border-top: 2px solid var(--border2); font-family: 'JetBrains Mono', monospace; }
+
+footer {
+  padding: 56px 0 80px;
+  color: var(--muted); font-size: 13px;
+}
+.footer-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+
+@media(max-width:700px){
+  .cards.c2,.cards.c3 { grid-template-columns: 1fr; }
+  .phase { grid-template-columns: 1fr; }
+  .phase-left { border-right: none; border-bottom: 1px solid var(--border2); }
+  .sl { grid-template-columns: 80px 1fr; }
+  .hero h1 { font-size: 30px; }
+  h2 { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="wrap">
+    <div class="nav-inner">
+      <a href="#overview" class="active">개요</a>
+      <a href="#architecture">아키텍처</a>
+      <a href="#policy">정책 설계</a>
+      <a href="#backend">백엔드</a>
+      <a href="#frontend">부모 콘솔</a>
+      <a href="#byod">BYOD 플로우</a>
+      <a href="#billing">구독·결제</a>
+      <a href="#phases">로드맵</a>
+      <a href="#cost">비용·수익</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="wrap">
+<div class="hero">
+  <div class="hero-badge">IMPLEMENTATION PLAN · v1.0 · 2026.06</div>
+  <h1 class="disp">삼성 갤럭시<br><span class="accent">공신폰 SaaS</span><br>전체 구현 계획</h1>
+  <p class="tagline">BYOD · Android Management API + Knox · Next.js SaaS · 위치 미포함 1차 출시 — 보유폰을 공신폰으로 전환하는 소프트웨어 라이선스 사업</p>
+  <div class="hero-pills">
+    <span class="pill"><span class="dot" style="background:var(--green)"></span>AMAPI Fully Managed</span>
+    <span class="pill"><span class="dot" style="background:var(--blue)"></span>Samsung Knox KPE (무료)</span>
+    <span class="pill"><span class="dot" style="background:var(--amber)"></span>Next.js 15 + Prisma</span>
+    <span class="pill"><span class="dot" style="background:var(--purple)"></span>월 구독 SaaS</span>
+    <span class="pill"><span class="dot" style="background:var(--cyan)"></span>QR 셀프 프로비저닝</span>
+  </div>
+</div>
+</div>
+
+<!-- 1. 개요 -->
+<section id="overview">
+<div class="wrap">
+  <div class="sec-label">01 · 사업 전제</div>
+  <h2 class="disp">무엇을 만드는가</h2>
+  <p>단말을 제조하지 않습니다. 부모가 <strong>집에 있는 삼성 갤럭시</strong>를 우리 서비스에 등록하면, QR 스캔 한 번으로 폰이 공신폰으로 바뀝니다. 차단 상태를 유지·관리하는 대가로 <strong>월 구독료</strong>를 받는 SaaS입니다.</p>
+
+  <div class="callout">
+    <span class="cl">핵심 명제</span>
+    공신폰의 본질은 하드웨어가 아니라 <strong>"차단이 살아있는 상태"</strong>입니다. 그 상태를 OS가 보증하는 수준으로 유지하고, 부모가 원격으로 관리할 수 있게 하는 것이 상품입니다.
+  </div>
+
+  <h3>왜 삼성 갤럭시인가</h3>
+  <div class="cards c3">
+    <div class="card">
+      <div class="ck">이유 01</div>
+      <h4>Knox = 무료 하드웨어 보안</h4>
+      <p>KPE Premium 라이선스가 <strong>2021년부터 무료</strong>. ARM TrustZone 기반 하드웨어 봉쇄로 세이프모드·소프트웨어 업데이트까지 잠글 수 있습니다.</p>
+    </div>
+    <div class="card">
+      <div class="ck">이유 02</div>
+      <h4>한국 BYOD 풀이 가장 크다</h4>
+      <p>국내 스마트폰 시장 점유율 1위. 집에 있는 공기계 = 대부분 갤럭시. 타깃 고객의 보유폰이 곧 재고입니다.</p>
+    </div>
+    <div class="card">
+      <div class="ck">이유 03</div>
+      <h4>AMAPI와 완전 호환</h4>
+      <p>Google AMAPI가 갤럭시에서 QR 등록·키오스크·정책 PATCH 모두 정식 지원. Knox Mobile Enrollment로 추후 대량 자동화도 가능.</p>
+    </div>
+  </div>
+
+  <h3>1차 출시 스코프 (포함/제외)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>1차 포함</th><th>제외(추후)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>차단 엔진</strong></td><td>AMAPI Fully Managed + Knox KPE</td><td>—</td></tr>
+        <tr><td><strong>등록 방식</strong></td><td>QR 셀프 프로비저닝</td><td>Zero-Touch 대량(Phase 2)</td></tr>
+        <tr><td><strong>차단 범위</strong></td><td>앱 화이트리스트·인터넷·ADB·개발자옵션·설정초기화</td><td>—</td></tr>
+        <tr><td><strong>허용 항목</strong></td><td>전화·문자·카카오톡(부모만)·사전·캘린더·시계</td><td>앱별 시간제한(Phase 2)</td></tr>
+        <tr><td><strong>위치 추적</strong></td><td class="br"><span class="badge br">제외</span></td><td>Phase 2 (위치정보법 신고 후)</td></tr>
+        <tr><td><strong>부모 콘솔</strong></td><td>앱 허용토글·스케줄·기기상태·구독관리</td><td>—</td></tr>
+        <tr><td><strong>플랫폼</strong></td><td>삼성 갤럭시 (Android 11+)</td><td>iOS·타브랜드(Phase 3)</td></tr>
+        <tr><td><strong>수익 모델</strong></td><td>월 구독 + BYOD 전환 서비스비</td><td>B2B 다량 납품(Phase 2)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<!-- 2. 아키텍처 -->
+<section id="architecture">
+<div class="wrap">
+  <div class="sec-label">02 · 시스템 설계</div>
+  <h2 class="disp">전체 아키텍처</h2>
+
+  <h3>기술 스택</h3>
+  <div class="stack">
+    <div class="sl"><span class="lname">단말</span>
+      <div class="lbar">
+        <span class="lchip lc-green">Samsung Galaxy (Android 11+)</span>
+        <span class="lchip lc-blue">Android Device Policy (Google)</span>
+        <span class="lchip lc-amber">Knox KPE (무료)</span>
+      </div>
+    </div>
+    <div class="sl"><span class="lname">MDM API</span>
+      <div class="lbar">
+        <span class="lchip lc-blue">Android Management API v1</span>
+        <span class="lchip lc-amber">Knox Service Plugin</span>
+        <span class="lchip lc-gray">Google Pub/Sub (정책 푸시)</span>
+      </div>
+    </div>
+    <div class="sl"><span class="lname">백엔드</span>
+      <div class="lbar">
+        <span class="lchip lc-green">Next.js 15 (App Router)</span>
+        <span class="lchip lc-green">TypeScript</span>
+        <span class="lchip lc-blue">Prisma ORM</span>
+        <span class="lchip lc-purple">PostgreSQL (Supabase)</span>
+        <span class="lchip lc-gray">Vercel / Cloud Run</span>
+      </div>
+    </div>
+    <div class="sl"><span class="lname">인증·결제</span>
+      <div class="lbar">
+        <span class="lchip lc-green">NextAuth.js (카카오·구글)</span>
+        <span class="lchip lc-amber">포트원 v2 (정기결제)</span>
+      </div>
+    </div>
+    <div class="sl"><span class="lname">스케줄</span>
+      <div class="lbar">
+        <span class="lchip lc-purple">Vercel Cron / pg_cron</span>
+        <span class="lchip lc-gray">시간표 정책 자동 교체</span>
+      </div>
+    </div>
+    <div class="sl"><span class="lname">인프라</span>
+      <div class="lbar">
+        <span class="lchip lc-green">Google Cloud (AMAPI 전용)</span>
+        <span class="lchip lc-blue">Vercel (프론트·API)</span>
+        <span class="lchip lc-gray">Supabase (DB·스토리지)</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>데이터 모델 (Prisma)</h3>
+  <pre><span class="cm">// schema.prisma 핵심 모델</span>
+
+<span class="ck2">model</span> <span class="ct">User</span> {
+  id          <span class="cv">String</span>    <span class="cn">@id @default(cuid())</span>
+  email       <span class="cv">String</span>    <span class="cn">@unique</span>
+  name        <span class="cv">String?</span>
+  phone       <span class="cv">String?</span>
+  devices     <span class="ct">Device[]</span>
+  subscription <span class="ct">Subscription?</span>
+  createdAt   <span class="cv">DateTime</span>  <span class="cn">@default(now())</span>
+}
+
+<span class="ck2">model</span> <span class="ct">Device</span> {
+  id              <span class="cv">String</span>   <span class="cn">@id @default(cuid())</span>
+  userId          <span class="cv">String</span>
+  user            <span class="ct">User</span>     <span class="cn">@relation(...)</span>
+  amapiDeviceId   <span class="cv">String?</span>  <span class="cm">// enterprises/{n}/devices/{id}</span>
+  amapiPolicyName <span class="cv">String?</span>  <span class="cm">// enterprises/{n}/policies/{name}</span>
+  enrollmentToken <span class="cv">String?</span>  <span class="cm">// QR 생성용 (만료 후 null)</span>
+  status          <span class="cv">DeviceStatus</span> <span class="cm">// PENDING|ACTIVE|EXPIRED|LOCKED</span>
+  kidsName        <span class="cv">String?</span>
+  model           <span class="cv">String?</span>  <span class="cm">// 갤럭시 모델명 (자동 감지)</span>
+  androidVersion  <span class="cv">String?</span>
+  schedule        <span class="ct">Schedule?</span>
+  createdAt       <span class="cv">DateTime</span> <span class="cn">@default(now())</span>
+}
+
+<span class="ck2">model</span> <span class="ct">Subscription</span> {
+  id            <span class="cv">String</span>   <span class="cn">@id @default(cuid())</span>
+  userId        <span class="cv">String</span>   <span class="cn">@unique</span>
+  user          <span class="ct">User</span>     <span class="cn">@relation(...)</span>
+  billingKey    <span class="cv">String</span>   <span class="cm">// 포트원 빌링키</span>
+  plan          <span class="cv">String</span>   <span class="cm">// BASIC | PRO</span>
+  status        <span class="cv">SubStatus</span> <span class="cm">// ACTIVE|PAST_DUE|CANCELLED</span>
+  currentPeriodEnd <span class="cv">DateTime</span>
+  failCount     <span class="cv">Int</span>      <span class="cn">@default(0)</span>
+}
+
+<span class="ck2">model</span> <span class="ct">Schedule</span> {
+  id         <span class="cv">String</span>  <span class="cn">@id @default(cuid())</span>
+  deviceId   <span class="cv">String</span>  <span class="cn">@unique</span>
+  device     <span class="ct">Device</span>  <span class="cn">@relation(...)</span>
+  <span class="cm">// 0-6: 일~토, 값: [{start:"09:00", end:"22:00"}]</span>
+  weekdays   <span class="cv">Json</span>
+  studyApps  <span class="cv">String[]</span> <span class="cm">// 공부시간에만 추가 허용할 앱</span>
+}</pre>
+
+  <h3>API 라우트 구조 (Next.js App Router)</h3>
+  <pre><span class="cm">app/
+├── api/
+│   ├── auth/          <span class="cm">// NextAuth</span>
+│   ├── devices/
+│   │   ├── enroll/    <span class="cm">POST  → AMAPI 토큰 발급 + QR 생성</span>
+│   │   ├── [id]/
+│   │   │   ├── policy/ <span class="cm">PATCH → 정책 즉시 변경</span>
+│   │   │   └── lock/   <span class="cm">POST  → 만료 정책 적용</span>
+│   │   └── webhook/    <span class="cm">POST  → AMAPI Pub/Sub 이벤트 수신</span>
+│   ├── schedule/
+│   │   └── apply/     <span class="cm">POST  → cron이 호출, 시간표 정책 교체</span>
+│   └── billing/
+│       ├── subscribe/ <span class="cm">POST  → 포트원 빌링키 등록</span>
+│       ├── webhook/   <span class="cm">POST  → 결제 성공/실패 이벤트</span>
+│       └── cancel/    <span class="cm">POST  → 해지 처리</span>
+└── dashboard/         <span class="cm">부모 콘솔 UI (Server Components)</span></pre>
+</div>
+</section>
+
+<!-- 3. 정책 설계 -->
+<section id="policy">
+<div class="wrap">
+  <div class="sec-label">03 · AMAPI 정책 설계</div>
+  <h2 class="disp">정책 3벌 + Knox 보강</h2>
+  <p>단말에 적용하는 정책은 <strong>3가지 상태</strong>로만 관리합니다. 콘솔 조작과 스케줄 cron, 그리고 구독 만료까지 모두 이 세 벌의 정책을 교체하는 것뿐입니다.</p>
+
+  <div class="tabs-head">
+    <button class="tab-btn active" onclick="switchTab(event,'study')">📚 공부 모드</button>
+    <button class="tab-btn" onclick="switchTab(event,'free')">🎯 자유 모드</button>
+    <button class="tab-btn" onclick="switchTab(event,'expired')">🔒 만료 모드</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-study">
+    <p style="color:var(--muted);margin-bottom:12px">기본 상태 — 항상 이 정책이 깔려있고, 자유 모드는 시간표 시간에만 임시 교체됩니다.</p>
+<pre><span class="cm">// policy_STUDY.json — 완전 차단 상태</span>
+{
+  <span class="cs">"name"</span>: <span class="cv">"enterprises/{id}/policies/study"</span>,
+
+  <span class="cm">// ── 기기 보안 ──────────────────────────────</span>
+  <span class="cs">"developerSettings"</span>: <span class="cv">"DEVELOPER_SETTINGS_DISABLED"</span>,  <span class="cm">// ADB + 개발자옵션 차단</span>
+  <span class="cs">"safeBootDisabled"</span>: <span class="cv">true</span>,          <span class="cm">// 세이프모드 부팅 차단</span>
+  <span class="cs">"factoryResetDisabled"</span>: <span class="cv">true</span>,      <span class="cm">// 설정 메뉴 초기화 차단</span>
+  <span class="cs">"untrustedAppsPolicy"</span>: {
+    <span class="cs">"untrustedAppInstallSources"</span>: <span class="cv">"DISALLOW_INSTALL"</span>  <span class="cm">// APK 사이드로드 차단</span>
+  },
+  <span class="cs">"screenCaptureDisabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"networkResetDisabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"modifyAccountsDisabled"</span>: <span class="cv">true</span>,   <span class="cm">// 계정 추가/삭제 차단</span>
+
+  <span class="cm">// ── 키오스크 (전화 + 필수앱만) ─────────────</span>
+  <span class="cs">"kioskCustomLauncherEnabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"kioskCustomization"</span>: {
+    <span class="cs">"statusBar"</span>: <span class="cv">"NOTIFICATIONS_AND_SYSTEM_INFO_DISABLED"</span>,
+    <span class="cs">"systemNavigation"</span>: <span class="cv">"NAVIGATION_DISABLED"</span>,
+    <span class="cs">"deviceSettings"</span>: <span class="cv">"SETTINGS_ACCESS_BLOCKED"</span>,
+    <span class="cs">"powerButtonActions"</span>: <span class="cv">"POWER_BUTTON_AVAILABLE"</span>
+  },
+
+  <span class="cm">// ── 허용 앱 화이트리스트 ─────────────────────</span>
+  <span class="cs">"applications"</span>: [
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.samsung.android.dialer"</span>,      <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> },  <span class="cm">// 전화</span>
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.samsung.android.messaging"</span>,   <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> },  <span class="cm">// 문자</span>
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.kakao.talk"</span>,                 <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> },  <span class="cm">// 카카오(부모 허용 시)</span>
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.sec.android.app.clockpackage"</span>, <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> }, <span class="cm">// 시계/타이머</span>
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.sec.android.app.sbrowser"</span>,   <span class="cs">"installType"</span>: <span class="cv">"BLOCKED"</span> },         <span class="cm">// 삼성 브라우저 차단</span>
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.android.chrome"</span>,             <span class="cs">"installType"</span>: <span class="cv">"BLOCKED"</span> },         <span class="cm">// 크롬 차단</span>
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.google.android.youtube"</span>,     <span class="cs">"installType"</span>: <span class="cv">"BLOCKED"</span> }          <span class="cm">// 유튜브 차단</span>
+    <span class="cm">// ... 부모가 콘솔에서 추가/제거한 앱이 동적으로 여기에 반영</span>
+  ],
+
+  <span class="cm">// ── Knox Service Plugin (삼성 전용 강화) ────</span>
+  <span class="cs">"applications"</span>: [{
+    <span class="cs">"packageName"</span>: <span class="cv">"com.samsung.android.knox.kpu"</span>,
+    <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span>,
+    <span class="cs">"managedConfiguration"</span>: {
+      <span class="cs">"kind"</span>: <span class="cv">"androidmanagement#managedConfiguration"</span>,
+      <span class="cs">"productId"</span>: <span class="cv">"app:com.samsung.android.knox.kpu"</span>,
+      <span class="cs">"managedProperty"</span>: [{
+        <span class="cs">"key"</span>: <span class="cv">"ConfigurationsV2"</span>,
+        <span class="cs">"valueBundle"</span>: {
+          <span class="cs">"managedProperty"</span>: [
+            { <span class="cs">"key"</span>: <span class="cv">"allow_safe_mode"</span>, <span class="cs">"valueBool"</span>: <span class="cv">false</span> },  <span class="cm">// Knox: 세이프모드 하드웨어 차단</span>
+            { <span class="cs">"key"</span>: <span class="cv">"allow_firmware_recovery"</span>, <span class="cs">"valueBool"</span>: <span class="cv">false</span> }
+          ]
+        }
+      }]
+    }
+  }]
+}</pre>
+  </div>
+
+  <div class="tab-pane" id="tab-free">
+<pre><span class="cm">// policy_FREE.json — 시간표 자유 시간에 임시 교체</span>
+{
+  <span class="cs">"name"</span>: <span class="cv">"enterprises/{id}/policies/free"</span>,
+
+  <span class="cm">// 보안은 유지</span>
+  <span class="cs">"developerSettings"</span>: <span class="cv">"DEVELOPER_SETTINGS_DISABLED"</span>,
+  <span class="cs">"safeBootDisabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"factoryResetDisabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"untrustedAppsPolicy"</span>: { <span class="cs">"untrustedAppInstallSources"</span>: <span class="cv">"DISALLOW_INSTALL"</span> },
+
+  <span class="cm">// 키오스크 OFF → 일반 런처로 복귀</span>
+  <span class="cs">"kioskCustomLauncherEnabled"</span>: <span class="cv">false</span>,
+
+  <span class="cm">// 부모가 허용한 앱 + 추가 앱 사용 가능</span>
+  <span class="cs">"applications"</span>: [
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.samsung.android.dialer"</span>,   <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> },
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.kakao.talk"</span>,               <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> }
+    <span class="cm">// 부모 허용 앱 목록에서 동적으로 추가</span>
+    <span class="cm">// 유튜브·게임 등은 여전히 BLOCKED 또는 미포함</span>
+  ]
+}</pre>
+  </div>
+
+  <div class="tab-pane" id="tab-expired">
+<pre><span class="cm">// policy_EXPIRED.json — 미납·해지 시 적용</span>
+{
+  <span class="cs">"name"</span>: <span class="cv">"enterprises/{id}/policies/expired"</span>,
+
+  <span class="cm">// 전화는 반드시 살림 (안전·CS·법적 이유)</span>
+  <span class="cs">"applications"</span>: [
+    { <span class="cs">"packageName"</span>: <span class="cv">"com.samsung.android.dialer"</span>, <span class="cs">"installType"</span>: <span class="cv">"FORCE_INSTALLED"</span> }
+  ],
+
+  <span class="cm">// 키오스크: 갱신 안내 웹앱만 표시</span>
+  <span class="cs">"kioskCustomLauncherEnabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"applications"</span>: [{
+    <span class="cs">"packageName"</span>: <span class="cv">"com.gongshin.renewal_notice"</span>,  <span class="cm">// 우리 웹앱 키오스크</span>
+    <span class="cs">"installType"</span>: <span class="cv">"KIOSK"</span>
+  }],
+
+  <span class="cm">// 보안은 그대로 유지</span>
+  <span class="cs">"developerSettings"</span>: <span class="cv">"DEVELOPER_SETTINGS_DISABLED"</span>,
+  <span class="cs">"safeBootDisabled"</span>: <span class="cv">true</span>,
+  <span class="cs">"factoryResetDisabled"</span>: <span class="cv">true</span>
+}
+
+<span class="cm">// 갱신 완료 → policy PATCH to "study" → 즉시 복원</span></pre>
+  </div>
+</div>
+</section>
+
+<!-- 4. 백엔드 -->
+<section id="backend">
+<div class="wrap">
+  <div class="sec-label">04 · 백엔드 핵심 로직</div>
+  <h2 class="disp">AMAPI 연동 코드</h2>
+
+  <h3>① 엔터프라이즈 + 정책 생성 (가입 시 1회)</h3>
+<pre><span class="cm">// lib/amapi.ts</span>
+<span class="ck2">import</span> { google } <span class="ck2">from</span> <span class="cs">'googleapis'</span>
+
+<span class="ck2">const</span> androidmanagement = google.androidmanagement(<span class="cs">'v1'</span>)
+
+<span class="ck2">export async function</span> <span class="ct">createEnterpriseForUser</span>(userId: <span class="cv">string</span>) {
+  <span class="cm">// 1. 서비스 계정 인증</span>
+  <span class="ck2">const</span> auth = <span class="ck2">new</span> google.auth.GoogleAuth({
+    keyFile: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
+    scopes: [<span class="cs">'https://www.googleapis.com/auth/androidmanagement'</span>],
+  })
+
+  <span class="cm">// 2. 엔터프라이즈 생성 (사용자 1명 = 엔터프라이즈 1개)</span>
+  <span class="ck2">const</span> enterprise = <span class="ck2">await</span> androidmanagement.enterprises.create({
+    projectId: process.env.GOOGLE_PROJECT_ID,
+    auth,
+    requestBody: {
+      enterpriseDisplayName: <span class="cs">`gongshin-user-${userId}`</span>,
+      pubsubTopic: <span class="cs">`projects/${process.env.GOOGLE_PROJECT_ID}/topics/amapi-events`</span>,
+    },
+  })
+  <span class="ck2">const</span> enterpriseName = enterprise.data.name  <span class="cm">// enterprises/{id}</span>
+
+  <span class="cm">// 3. 공부 정책 생성</span>
+  <span class="ck2">await</span> androidmanagement.enterprises.policies.patch({
+    auth,
+    name: <span class="cs">`${enterpriseName}/policies/study`</span>,
+    updateMask: <span class="cs">'applications,kioskCustomLauncherEnabled,kioskCustomization,developerSettings,safeBootDisabled,factoryResetDisabled'</span>,
+    requestBody: buildStudyPolicy(enterpriseName),
+  })
+
+  <span class="cm">// 자유·만료 정책도 동일하게 생성</span>
+  <span class="ck2">return</span> enterpriseName
+}</pre>
+
+  <h3>② QR 등록 토큰 발급 (단말 등록 시)</h3>
+<pre><span class="ck2">export async function</span> <span class="ct">createEnrollmentToken</span>(enterpriseName: <span class="cv">string</span>) {
+  <span class="ck2">const</span> res = <span class="ck2">await</span> androidmanagement.enterprises.enrollmentTokens.create({
+    auth,
+    parent: enterpriseName,
+    requestBody: {
+      policyName: <span class="cs">`${enterpriseName}/policies/study`</span>,
+      duration: <span class="cs">'3600s'</span>,  <span class="cm">// 1시간 유효 (부모가 그 시간 안에 스캔)</span>
+      allowPersonalUsage: <span class="cs">'PERSONAL_USAGE_DISALLOWED'</span>,  <span class="cm">// 개인 사용 차단</span>
+    },
+  })
+  <span class="cm">// res.data.value → QR로 인코딩할 JSON 문자열</span>
+  <span class="ck2">return</span> res.data.value  <span class="cm">// 이 값을 QR 이미지로 변환해 화면에 표시</span>
+}</pre>
+
+  <h3>③ 정책 즉시 변경 (콘솔에서 앱 토글)</h3>
+<pre><span class="cm">// app/api/devices/[id]/policy/route.ts</span>
+<span class="ck2">export async function</span> <span class="ct">PATCH</span>(req: Request, { params }) {
+  <span class="ck2">const</span> { allowedApps } = <span class="ck2">await</span> req.json()
+  <span class="ck2">const</span> device = <span class="ck2">await</span> prisma.device.findUnique({ where: { id: params.id } })
+
+  <span class="cm">// 현재 정책(study)을 조회 후 applications 배열만 교체</span>
+  <span class="ck2">const</span> updatedPolicy = buildStudyPolicy(device.amapiPolicyName, allowedApps)
+
+  <span class="ck2">await</span> androidmanagement.enterprises.policies.patch({
+    auth,
+    name: device.amapiPolicyName,
+    updateMask: <span class="cs">'applications'</span>,  <span class="cm">// applications만 업데이트</span>
+    requestBody: updatedPolicy,
+  })
+  <span class="cm">// → Pub/Sub으로 단말에 실시간 반영 (30초~2분 내)</span>
+  <span class="ck2">return</span> Response.json({ ok: <span class="cv">true</span> })
+}</pre>
+
+  <h3>④ 스케줄 cron (시간표 자동 교체)</h3>
+<pre><span class="cm">// app/api/schedule/apply/route.ts  ← vercel.json cron: "*/15 * * * *"</span>
+<span class="ck2">export async function</span> <span class="ct">POST</span>() {
+  <span class="ck2">const</span> now = <span class="ck2">new</span> Date()
+  <span class="ck2">const</span> devices = <span class="ck2">await</span> prisma.device.findMany({
+    where: { status: <span class="cs">'ACTIVE'</span> },
+    include: { schedule: <span class="cv">true</span>, user: { include: { subscription: <span class="cv">true</span> } } }
+  })
+
+  <span class="ck2">for</span> (<span class="ck2">const</span> device <span class="ck2">of</span> devices) {
+    <span class="ck2">if</span> (device.user.subscription?.status !== <span class="cs">'ACTIVE'</span>) <span class="ck2">continue</span>
+
+    <span class="ck2">const</span> isStudyTime = checkSchedule(device.schedule, now)
+    <span class="ck2">const</span> targetPolicy = isStudyTime ? <span class="cs">'study'</span> : <span class="cs">'free'</span>
+    <span class="ck2">const</span> policyBase = device.amapiPolicyName.split(<span class="cs">'/'</span>).slice(0,-1).join(<span class="cs">'/'</span>)
+
+    <span class="ck2">await</span> androidmanagement.enterprises.devices.patch({
+      auth,
+      name: device.amapiDeviceId,
+      updateMask: <span class="cs">'policyName'</span>,
+      requestBody: { policyName: <span class="cs">`${policyBase}/${targetPolicy}`</span> }
+    })
+  }
+  <span class="ck2">return</span> Response.json({ applied: devices.length })
+}</pre>
+
+  <h3>⑤ 구독 만료 처리</h3>
+<pre><span class="cm">// 포트원 webhook → 결제 실패 시</span>
+<span class="ck2">export async function</span> <span class="ct">handlePaymentFailed</span>(userId: <span class="cv">string</span>) {
+  <span class="ck2">const</span> devices = <span class="ck2">await</span> prisma.device.findMany({ where: { userId, status: <span class="cs">'ACTIVE'</span> } })
+
+  <span class="ck2">for</span> (<span class="ck2">const</span> device <span class="ck2">of</span> devices) {
+    <span class="ck2">const</span> policyBase = device.amapiPolicyName.split(<span class="cs">'/'</span>).slice(0,-1).join(<span class="cs">'/'</span>)
+    <span class="cm">// 만료 정책으로 전환 → 전화만 되고 갱신 화면 표시</span>
+    <span class="ck2">await</span> androidmanagement.enterprises.devices.patch({
+      auth,
+      name: device.amapiDeviceId,
+      updateMask: <span class="cs">'policyName'</span>,
+      requestBody: { policyName: <span class="cs">`${policyBase}/expired`</span> }
+    })
+    <span class="ck2">await</span> prisma.device.update({ where: { id: device.id }, data: { status: <span class="cs">'EXPIRED'</span> } })
+  }
+}</pre>
+</div>
+</section>
+
+<!-- 5. 부모 콘솔 -->
+<section id="frontend">
+<div class="wrap">
+  <div class="sec-label">05 · 부모 콘솔 UI</div>
+  <h2 class="disp">부모가 실제로 보는 화면</h2>
+
+  <div class="cards c2">
+    <div class="card">
+      <div class="ck">화면 1</div>
+      <h4>📱 기기 현황</h4>
+      <ul>
+        <li>아이 이름 · 폰 모델 · 배터리</li>
+        <li>현재 모드 (공부 중 / 자유 시간)</li>
+        <li>마지막 정책 적용 시간</li>
+        <li>즉시 모드 전환 버튼</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ck">화면 2</div>
+      <h4>📋 앱 관리</h4>
+      <ul>
+        <li>허용 앱 토글 (검색 + 추가)</li>
+        <li>카카오톡 ON/OFF (부모 연락용)</li>
+        <li>저장하면 30초 내 단말에 반영</li>
+        <li>공부시간 전용 앱 별도 설정</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ck">화면 3</div>
+      <h4>⏰ 시간표 설정</h4>
+      <ul>
+        <li>요일별 공부시간 범위 설정</li>
+        <li>예: 평일 오후 5~9시 = 완전 차단</li>
+        <li>주말 별도 설정</li>
+        <li>cron 15분 단위로 자동 적용</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ck">화면 4</div>
+      <h4>💳 구독 관리</h4>
+      <ul>
+        <li>플랜·결제 수단 표시</li>
+        <li>다음 결제일 · 기기 수</li>
+        <li>결제 실패 알림</li>
+        <li>해지 플로우 (30일 유예)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>QR 등록 화면 핵심 UX</h3>
+  <div class="callout info">
+    <span class="cl">설계 원칙</span>
+    "초기화당한다"는 느낌이 아니라 <strong>"새 학습기기로 탄생하는 의식"</strong>으로 프레이밍합니다. 백업 → 초기화 → QR 스캔 → 완료의 4단계를 진행 바와 함께 보여주고, 각 단계에 예상 소요 시간을 명시합니다.
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>단계</th><th>화면 내용</th><th>소요 시간</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg">STEP 1</span></td><td><strong>백업 안내</strong> — 삼성 Smart Switch / Google 백업 링크 제공</td><td>5~10분</td></tr>
+        <tr><td><span class="badge bb">STEP 2</span></td><td><strong>초기화 안내</strong> — 설정 > 일반 > 초기화 경로 스크린샷 제공</td><td>3~5분</td></tr>
+        <tr><td><span class="badge ba">STEP 3</span></td><td><strong>QR 스캔</strong> — "환영 화면 6번 탭 → Wi-Fi 연결 → QR 스캔" 애니메이션 가이드</td><td>2~3분</td></tr>
+        <tr><td><span class="badge bg">STEP 4</span></td><td><strong>완료</strong> — 기기 연결 확인, 공신폰 활성화 완료 화면</td><td>자동</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<!-- 6. BYOD 플로우 -->
+<section id="byod">
+<div class="wrap">
+  <div class="sec-label">06 · BYOD 운영 SOP</div>
+  <h2 class="disp">고객별 수락 기준 + 운영 절차</h2>
+
+  <h3>단말 수락 기준 (CS 기본 가이드)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>기준</th><th>✅ 수락</th><th>⚠ 조건부</th><th>❌ 거절</th></tr></thead>
+      <tbody>
+        <tr><td><strong>제조사</strong></td><td>삼성 갤럭시 (국내 정품)</td><td>—</td><td>샤오미·중국산·언노운</td></tr>
+        <tr><td><strong>Android 버전</strong></td><td>Android 11 이상</td><td>Android 10 (Knox 있으면)</td><td>Android 9 이하</td></tr>
+        <tr><td><strong>Knox 상태</strong></td><td>WARRANTY_BIT 정상</td><td>—</td><td>Knox void (루팅 이력)</td></tr>
+        <tr><td><strong>IMEI</strong></td><td>분실·도난 미등록</td><td>—</td><td>IMEI 불량·블랙리스트</td></tr>
+        <tr><td><strong>잔여 약정</strong></td><td>없음 (공기계)</td><td>약정 확인 후 안내</td><td>타인 명의 약정 잠금</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <span class="cl">Knox Warranty Bit 확인법</span>
+    <strong>*#0*#</strong> 엔지니어링 메뉴 → Knox 탭에서 워런티 비트가 0x0인지 확인. 루팅·커스텀롬 이력이 있으면 Knox 하드웨어 보안이 비활성화됩니다. 입고 체크리스트에 필수 포함.
+  </div>
+
+  <h3>운영 자동화 목표</h3>
+  <p>BYOD 모델의 핵심은 <strong>택배 입고 없이 셀프로 끝나는 것</strong>입니다. 1인 운영 기준 대응 한계를 아래와 같이 설계합니다.</p>
+  <div class="cards c3">
+    <div class="card">
+      <div class="ck">Phase 0~1</div>
+      <h4>수동 지원</h4>
+      <p>가입 후 카카오 채널로 단계별 안내. 1:1 문의 대응. 1인 기준 하루 5~10건 처리.</p>
+    </div>
+    <div class="card">
+      <div class="ck">Phase 2</div>
+      <h4>반자동 (QR 셀프)</h4>
+      <p>4단계 온보딩 페이지 완성 후 CS 없이 셀프 완료율 70%+ 목표.</p>
+    </div>
+    <div class="card">
+      <div class="ck">Phase 3</div>
+      <h4>Knox Mobile Enrollment</h4>
+      <p>B2B 대량 납품 시 KME로 부팅만 하면 자동 등록. 인건비 제로.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- 7. 구독·결제 -->
+<section id="billing">
+<div class="wrap">
+  <div class="sec-label">07 · 구독 설계</div>
+  <h2 class="disp">플랜 + 결제 흐름</h2>
+
+  <div class="cards c2">
+    <div class="card" style="border-color:var(--border2)">
+      <div class="ck">PLAN A</div>
+      <h4 class="disp">베이직</h4>
+      <div class="price">₩3,900<span style="font-size:14px;color:var(--muted)">/월</span></div>
+      <ul style="margin-top:14px">
+        <li>기기 1대</li>
+        <li>앱 화이트리스트</li>
+        <li>시간표 스케줄</li>
+        <li>기기 상태 확인</li>
+        <li style="color:var(--dim)">위치 추적 (향후)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--green);border-width:1.5px">
+      <div class="ck">PLAN B · 추천</div>
+      <h4 class="disp">프로</h4>
+      <div class="price">₩5,900<span style="font-size:14px;color:var(--muted)">/월</span></div>
+      <ul style="margin-top:14px">
+        <li>기기 3대</li>
+        <li>베이직 전체 포함</li>
+        <li>앱별 시간 제한 (Phase 2)</li>
+        <li>긴급 잠금 (분실 대응)</li>
+        <li>카카오 채널 우선 CS</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>BYOD 전환 서비스비 (별도)</h3>
+  <div class="callout">
+    <span class="cl">1회성 수익</span>
+    구독과 별도로 전환 세팅 서비스비 <strong>₩9,900~19,900</strong>을 가입 시 청구. 재료비 0원이므로 거의 전액이 기여이익. 구독이 없어도 전환비만 받는 티어를 두면 진입 장벽이 낮아집니다.
+  </div>
+
+  <h3>결제 흐름 (포트원 v2)</h3>
+  <pre><span class="cm">// 1. 카드 등록 (빌링키 발급)</span>
+POST /api/billing/subscribe
+→ 포트원 결제창 → 빌링키 발급 → DB 저장
+
+<span class="cm">// 2. 매월 자동 결제 (서버 cron)</span>
+POST /api/billing/charge  ← 매월 1일 오전 9시
+→ 포트원 빌링키로 결제
+→ 성공: subscription.currentPeriodEnd += 30일
+→ 실패: failCount++ → 3일 후 재시도
+→ 3회 실패: handlePaymentFailed() → 만료 정책 적용
+
+<span class="cm">// 3. 갱신 후 복원</span>
+POST /api/billing/webhook  ← 포트원 이벤트
+→ payment.paid → 만료 단말 모두 study 정책으로 복원</pre>
+</div>
+</section>
+
+<!-- 8. 로드맵 -->
+<section id="phases">
+<div class="wrap">
+  <div class="sec-label">08 · 실행 로드맵</div>
+  <h2 class="disp">Phase별 달성 목표</h2>
+  <p>직장 병행 소프트랜딩 기준 — 퇴근 후 + 주말 시간으로 가능한 속도로 설계</p>
+
+  <div class="phases">
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-num">PHASE 0</div>
+        <div class="phase-title">PoC</div>
+        <div class="phase-dur">1~2주</div>
+        <span class="badge bg">지금 시작</span>
+      </div>
+      <div class="phase-right">
+        <h4>본인 갤럭시로 전체 파이프라인 검증</h4>
+        <ul>
+          <li>Google Cloud 프로젝트 생성 + <strong>AMAPI 활성화</strong></li>
+          <li>서비스 계정 생성 + Knox Admin Portal 연결</li>
+          <li>엔터프라이즈 생성 → study 정책 1개 → 등록 토큰 발급</li>
+          <li><strong>본인 폰 초기화 → QR 스캔 → 키오스크 확인</strong></li>
+          <li>정책 PATCH로 앱 추가/제거 되는지 실시간 확인</li>
+          <li>Knox 워런티 비트 확인 방법 숙지</li>
+        </ul>
+        <div class="phase-tasks">
+          <span class="task">Google Cloud 설정</span>
+          <span class="task">AMAPI 첫 호출</span>
+          <span class="task">QR 등록</span>
+          <span class="task">키오스크 확인</span>
+          <span class="task">정책 PATCH 테스트</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-num">PHASE 1</div>
+        <div class="phase-title">MVP</div>
+        <div class="phase-dur">3~6주</div>
+        <span class="badge bb">개발</span>
+      </div>
+      <div class="phase-right">
+        <h4>결제 연동 + 부모 콘솔 기본 완성</h4>
+        <ul>
+          <li>Next.js 프로젝트 + Prisma 스키마 세팅</li>
+          <li>NextAuth 카카오 로그인</li>
+          <li>AMAPI 엔터프라이즈 자동 생성 (가입 시)</li>
+          <li>QR 발급 + 온보딩 4단계 페이지</li>
+          <li>부모 콘솔: 앱 토글 + 기기 상태</li>
+          <li>포트원 v2 정기결제 + 만료 정책 자동 적용</li>
+          <li>시간표 cron (15분 단위)</li>
+          <li>지인 베타 3~5명 (갤럭시 소지자 우선)</li>
+        </ul>
+        <div class="phase-tasks">
+          <span class="task">인증·결제</span>
+          <span class="task">QR 온보딩</span>
+          <span class="task">앱 토글 콘솔</span>
+          <span class="task">시간표 cron</span>
+          <span class="task">만료 정책</span>
+          <span class="task">베타 오픈</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-num">PHASE 2</div>
+        <div class="phase-title">성장</div>
+        <div class="phase-dur">2~4개월</div>
+        <span class="badge ba">확장</span>
+      </div>
+      <div class="phase-right">
+        <h4>SEO + CS 자동화 + B2B 준비</h4>
+        <ul>
+          <li>온보딩 셀프 완료율 70%+ 달성 (CS 의존 탈피)</li>
+          <li>위치추적 기능 — 위치기반서비스 신고 → Phase 2 추가</li>
+          <li>앱별 시간 제한 (공부시간 외 유튜브 30분 제한 등)</li>
+          <li>학원·기숙학원 B2B 납품 준비 (Knox Mobile Enrollment)</li>
+          <li>구독자 100명 목표 → 월 구독 매출 39만원+</li>
+          <li>네이버 블로그·맘카페 SEO 콘텐츠</li>
+        </ul>
+        <div class="phase-tasks">
+          <span class="task">위치추적</span>
+          <span class="task">앱 시간 제한</span>
+          <span class="task">B2B 파일럿</span>
+          <span class="task">KME 연동</span>
+          <span class="task">구독 100명</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-num">PHASE 3</div>
+        <div class="phase-title">레버리지</div>
+        <div class="phase-dur">6개월~</div>
+        <span class="badge bp">스케일</span>
+      </div>
+      <div class="phase-right">
+        <h4>B2B + iOS + 완전 자동화</h4>
+        <ul>
+          <li>학원 체인·기숙학원 다량 계약 (기기당 월 단가)</li>
+          <li>iOS Apple Configurator 2 / Supervised Mode 지원</li>
+          <li>자동 IMEI 체크 + 단말 등급 판정 API</li>
+          <li>구독 1,000명 → 월 구독 390만원+ 돌파 목표</li>
+        </ul>
+        <div class="phase-tasks">
+          <span class="task">B2B 계약</span>
+          <span class="task">iOS 지원</span>
+          <span class="task">자동 IMEI 체크</span>
+          <span class="task">구독 1000명</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- 9. 비용·수익 -->
+<section id="cost">
+<div class="wrap">
+  <div class="sec-label">09 · 비용 + 수익 구조</div>
+  <h2 class="disp">원가 거의 0 — 구독이 본체</h2>
+
+  <h3>월 운영 비용 (구독자 100명 기준)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>서비스</th><th>월 비용</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><strong>AMAPI</strong></td><td>Google Android Management API</td><td><span class="badge bg">무료</span></td><td>호출량 무제한</td></tr>
+        <tr><td><strong>Knox KPE</strong></td><td>Samsung Knox Platform for Enterprise</td><td><span class="badge bg">무료</span></td><td>2021년부터 무료화</td></tr>
+        <tr><td><strong>Pub/Sub</strong></td><td>Google Cloud Pub/Sub</td><td>≈ ₩1,000</td><td>100명 기준 미미</td></tr>
+        <tr><td><strong>DB</strong></td><td>Supabase (PostgreSQL)</td><td>₩0~25,000</td><td>Free tier 충분</td></tr>
+        <tr><td><strong>호스팅</strong></td><td>Vercel Pro</td><td>₩28,000</td><td>cron + 팀 플랜</td></tr>
+        <tr><td><strong>결제</strong></td><td>포트원 수수료</td><td>결제액 3%</td><td>₩3,900 × 3% = ₩117</td></tr>
+        <tr><td><strong>도메인·이메일</strong></td><td>Cloudflare + Resend</td><td>≈ ₩5,000</td><td>—</td></tr>
+        <tr class="cost-total"><td colspan="2">월 고정비 합계 (100명 기준)</td><td>≈ ₩60,000</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>구독자별 손익 시뮬레이션</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>구독자 수</th><th>월 구독 매출</th><th>결제 수수료</th><th>고정비</th><th>월 기여이익</th></tr></thead>
+      <tbody>
+        <tr><td>30명</td><td>₩117,000</td><td>₩3,500</td><td>₩60,000</td><td><span class="badge bg">₩53,500</span></td></tr>
+        <tr><td>100명</td><td>₩390,000</td><td>₩11,700</td><td>₩65,000</td><td><span class="badge bg">₩313,000</span></td></tr>
+        <tr><td>300명</td><td>₩1,170,000</td><td>₩35,100</td><td>₩80,000</td><td><span class="badge bg">₩1,054,900</span></td></tr>
+        <tr><td>1,000명</td><td>₩3,900,000</td><td>₩117,000</td><td>₩120,000</td><td><span class="badge bg">₩3,663,000</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px">※ 베이직 ₩3,900 기준. 전환 서비스비(₩9,900~19,900 1회) 별도 — 100명 전환 시 99만~199만 원 추가.</p>
+
+  <div class="callout">
+    <span class="cl">구조적 강점</span>
+    고정비 ₩6만 선이 유지되는 한, 구독자 30명만 넘어도 흑자입니다. 1인 직장 병행 사업으로 손익분기가 이렇게 낮은 SaaS는 드뭅니다. <strong>구독 1,000명이 소프트랜딩의 전환점</strong> — 월 366만 원이면 선택지가 생깁니다.
+  </div>
+
+  <h3>PoC 시작을 위한 체크리스트</h3>
+  <ul class="chk" id="checklist">
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>Google Cloud 프로젝트 생성 (gongshin-prod)</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>Android Management API 활성화</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>서비스 계정 생성 + JSON 키 발급</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>Knox Admin Portal 가입 + KPE Premium 라이선스 발급 (무료)</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>공장초기화할 갤럭시 단말 준비 (본인 구형 폰)</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>Node.js 스크립트로 엔터프라이즈 생성 + study 정책 1개</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>등록 토큰 발급 + QR 이미지 생성</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>갤럭시 초기화 → 6탭 → QR 스캔 → 키오스크 확인</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>정책 PATCH로 앱 추가/제거 실시간 반영 확인</span></li>
+    <li onclick="toggleChk(this)"><span class="cb"></span><span>Knox 워런티 비트 정상 확인 (*#0*#)</span></li>
+  </ul>
+
+  <div class="prog-wrap">
+    <div class="prog-label"><span>PoC 진행률</span><span id="prog-pct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-title">요약</div>
+    <p>삼성 갤럭시 + AMAPI + Knox(무료) 조합은 <strong>원가 구조가 거의 0</strong>이라 구독 매출이 거의 그대로 이익이 됩니다. PoC는 공장초기화 갤럭시 1대와 Google Cloud 프리 티어로 오늘 당장 시작할 수 있습니다. 가장 먼저 할 일은 <strong>본인 구형 갤럭시를 QR 하나로 공신폰으로 만들어보는 것</strong>입니다.</p>
+    <p style="margin-top:16px;font-size:12.5px;font-family:'JetBrains Mono',monospace;color:var(--dim)">SOURCES · Google AMAPI Docs (developers.google.com/android/management) · Samsung Knox Docs (docs.samsungknox.com) · KPE Free 정책 발표 (samsungknox.com 2021.07) · Knox MSRP Dec 2025 · AMAPI Release Notes 2026 · 포트원 v2 정기결제 Docs</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--dim)">본 계획서는 공개 자료 기반의 구현 가이드이며 법률·세무 자문이 아닙니다.</p>
+  </div>
+</footer>
+
+<script>
+// tab
+function switchTab(e, id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// checklist
+function toggleChk(el) {
+  el.classList.toggle('done');
+  updateProg();
+}
+function updateProg() {
+  const all = document.querySelectorAll('#checklist li').length;
+  const done = document.querySelectorAll('#checklist li.done').length;
+  const pct = Math.round(done/all*100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+}
+
+// nav active on scroll
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+      });
+    }
+  });
+}, { threshold: 0.25 });
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
