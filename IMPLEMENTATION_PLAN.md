@@ -47,17 +47,17 @@
 
 ### 레이어별 기술
 
-| 레이어 | 기술 |
-|---|---|
-| 단말 | Samsung Galaxy (Android 11+), Android Device Policy, Knox KPE (무료) |
-| MDM API | Android Management API v1, Knox Service Plugin, Google Pub/Sub |
-| 백엔드 | Next.js 15 (App Router), TypeScript, Prisma ORM |
-| 데이터베이스 | PostgreSQL (Supabase) |
-| 인증 | NextAuth.js (카카오·구글 OAuth) |
-| 결제 | 포트원 v2 (정기결제 빌링키) |
-| 스케줄 | Vercel Cron (15분 단위), pg_cron |
-| 인프라 | Google Cloud (AMAPI), Vercel (프론트·API), Supabase (DB) |
-| 도메인·이메일 | Cloudflare, Resend |
+| 레이어 | 기술 | 비고 |
+|---|---|---|
+| 단말 | Samsung Galaxy (Android 11+), Android Device Policy, Knox KPE (무료) | |
+| MDM API | Android Management API v1, Knox Service Plugin, Google Pub/Sub | |
+| 백엔드 | ~~Next.js 15~~ **Next.js 16.2.9** (App Router), TypeScript, ~~Prisma ORM~~ **Prisma 6** | 실제 버전 |
+| 데이터베이스 | PostgreSQL (**Supabase** — zafweilnjqtxuhcttwdd, Singapore) | ✅ 연결 완료 |
+| 인증 | ~~NextAuth.js v4~~ **Auth.js (next-auth v5 beta)** (카카오·구글 OAuth) | 실제 버전 |
+| 결제 | 포트원 v2 (정기결제 빌링키) | |
+| 스케줄 | Vercel Cron (15분 단위), pg_cron | |
+| 인프라 | Google Cloud (AMAPI — gongshin-poc-0614-ssamji78), Vercel (프론트·API), Supabase (DB) | |
+| 도메인·이메일 | Cloudflare, Resend | |
 
 ### 초기 환경 세팅 체크리스트
 
@@ -95,14 +95,14 @@ npm install @vercel/cron           # cron
 
 ### 태스크 목록
 
-- [ ] Google Cloud 프로젝트 생성 (gongshin-prod)
-- [ ] Android Management API 활성화
-- [ ] 서비스 계정 생성 + JSON 키 발급
-- [ ] Knox Admin Portal 가입 + KPE Premium 라이선스 발급 (무료)
-- [ ] 공장초기화할 갤럭시 단말 준비 (본인 구형 폰)
-- [ ] Node.js 스크립트로 엔터프라이즈 생성 + study 정책 1개
-- [ ] 등록 토큰 발급 + QR 이미지 생성
-- [ ] 갤럭시 초기화 → 6번 탭 → QR 스캔 → 키오스크 확인
+- [x] ~~Google Cloud 프로젝트 생성~~ → `gongshin-poc-0614-ssamji78` 생성 완료
+- [x] ~~Android Management API 활성화~~ → 활성화 완료
+- [x] ~~서비스 계정 생성 + JSON 키 발급~~ → `secrets/gongshin-poc-0614-sa-key.json`
+- [ ] Knox Admin Portal 가입 + KPE Premium 라이선스 발급 (무료) ⚠️ _삼성 임직원 — 사외 접근 불가, MVP 이후 사내망에서 진행_
+- [ ] 공장초기화할 갤럭시 단말 준비 → **기기 등록 별도 진행 예정**
+- [x] ~~Node.js 스크립트로 엔터프라이즈 생성 + 정책 등록~~ → `enterprises/LC03g436k2`, scripts/ 완성
+- [x] ~~등록 토큰 발급 + QR 이미지 생성~~ → `poc-qr.html` / `poc-qr.png` 생성됨
+- [ ] 갤럭시 초기화 → 6번 탭 → QR 스캔 → 키오스크 확인 → **기기 등록 별도 진행**
 - [ ] 정책 PATCH로 앱 추가/제거 실시간 반영 확인
 - [ ] Knox 워런티 비트 정상 확인 (`*#0*#`)
 
@@ -118,12 +118,15 @@ scripts/
 
 ### PoC에서 배운 것 (실제 구현 시 반영 필요)
 
-| 발견한 문제 | 원인 | MVP 대응 |
+| 발견한 문제 | 원인 | 상태 / MVP 대응 |
 |---|---|---|
-| QR "잘못된 코드" | `token.value` 대신 `token.qrCode` 사용해야 함 | `createEnrollmentToken()`에서 `qrCode` 필드 반환 |
-| 기기 등록 한도 초과 | 반복 스캔 시 토큰 슬롯 소진 | 토큰 발급 전 기존 토큰 자동 삭제 |
+| QR "잘못된 코드" | `token.value` 대신 `token.qrCode` 사용해야 함 | ✅ `poc-enroll.ts`에서 `qrCode` 필드로 수정 완료 |
+| 기기 등록 한도 초과 | 반복 스캔 시 토큰 슬롯 소진 | ✅ `poc-cleanup.ts` 작성, 토큰 자동 삭제 가능 |
+| 신규 엔터프라이즈 쿼터 제한 | `CUSTOMER_MANAGED` 엔터프라이즈 신규 생성 시 24~48h trust ramp-up 기간 존재 — 이 기간 기기 등록 불가 | ⏳ 시간 경과 후 재시도 / 서비스 출시 전 GCP 쿼터 증가 요청 필수 |
 | AMAPI 정책 필드 오류 | `developerSettings`, `untrustedAppsPolicy` 최신 API에서 다름 | MVP에서 정확한 필드명 재확인 필요 |
-| 엔터프라이즈 쿼터 | 기본 쿼터가 낮음 | GCP 콘솔에서 사전 증가 요청 |
+| Prisma 7 breaking change | `url`/`directUrl`을 `schema.prisma`에서 지원 안 함 | ✅ Prisma 6으로 다운그레이드 |
+| next-auth v4 + Next.js 16 호환 문제 | v4는 Next.js 16 App Router와 호환 안됨 | ✅ next-auth v5 (Auth.js beta)로 업그레이드 |
+| Turbopack 라우팅 오류 | 빈 `app/` 디렉토리가 `src/app/`과 충돌 | ✅ 빈 `app/` 디렉토리 삭제로 해결 |
 
 ### PoC 성공 기준
 
@@ -142,12 +145,12 @@ scripts/
 ### 주차별 계획
 
 #### Week 1-2: 기반 세팅
-- [ ] Next.js 15 + TypeScript + Tailwind + Prisma 프로젝트 세팅
-- [ ] Supabase PostgreSQL 연결
-- [ ] Prisma 스키마 작성 (User, Device, Subscription, Schedule)
-- [ ] NextAuth.js 카카오 로그인 연동
+- [x] ~~Next.js 15 + TypeScript + Tailwind + Prisma 프로젝트 세팅~~ → Next.js 16.2.9 + Prisma 6 + Tailwind 4
+- [x] ~~Supabase PostgreSQL 연결~~ → `zafweilnjqtxuhcttwdd` (Singapore), `.env.local` 설정 완료
+- [x] ~~Prisma 스키마 작성 (User, Device, Subscription, Schedule)~~ → `prisma/schema.prisma` + `db push` 완료
+- [x] ~~NextAuth.js 카카오 로그인 연동~~ → next-auth v5 업그레이드, 카카오 OAuth 동작 확인
 - [ ] Google OAuth 로그인 연동
-- [ ] 환경변수 관리 (.env.local, Vercel 환경변수)
+- [x] ~~환경변수 관리 (.env.local)~~ → `.env.local` 완성 (gitignored)
 
 #### Week 2-3: AMAPI 연동
 - [ ] `lib/amapi.ts` — Google API 클라이언트 초기화
@@ -158,7 +161,7 @@ scripts/
   - [ ] 1시간 내 미연결 토큰 만료 처리 cron 추가
 - [ ] `POST /api/devices/webhook` — Pub/Sub 이벤트 수신 처리
 - [ ] `PATCH /api/devices/[id]/policy` — 정책 즉시 변경
-- [ ] **GCP 콘솔 → Android Management API → Quotas → Device enrollments per enterprise 증가 요청** (서비스 오픈 전 필수)
+- [ ] **GCP 콘솔 → Android Management API → Quotas → Device enrollments per enterprise 증가 요청** (서비스 오픈 전 필수) ⚠️ _trust ramp-up 해소 후 즉시 요청_
 
 #### Week 3-4: 부모 콘솔 UI
 - [ ] `/dashboard` — 기기 현황 페이지 (상태·모드·배터리)
@@ -595,5 +598,234 @@ gongshin-saas/
 ```
 
 ---
+
+---
+
+## 13. 보안 검토 사항
+
+> Codex 보안 리뷰 반영 (2026-06-14)  
+> **🔴 즉시 수정** → MVP 출시 전 반드시 구현 / **🟡 출시 전** → 베타 이전 완료 / **🟢 Phase 2** → 서비스 안정화 후
+
+---
+
+### 🔴 즉시 수정 (출시 전 필수)
+
+#### S-1. AMAPI Pub/Sub 웹훅 인증 없음
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `/api/devices/webhook`이 인증 없이 JSON을 받으면 외부에서 가짜 `ENROLLMENT_COMPLETE` 이벤트를 보낼 수 있음 — 무단 기기 활성화 가능 |
+| **해결** | Google Cloud Pub/Sub push 메시지에는 `Authorization: Bearer <OIDC JWT>` 헤더가 포함됨. 이를 Google 공개키로 서명 검증해야 함 |
+| **구현** | `google-auth-library`의 `OAuth2Client.verifyIdToken()` 사용, `audience`를 웹훅 URL로 설정 |
+
+```typescript
+// 검증 예시
+import { OAuth2Client } from 'google-auth-library'
+const client = new OAuth2Client()
+const ticket = await client.verifyIdToken({
+  idToken: req.headers.get('authorization')?.replace('Bearer ', '') ?? '',
+  audience: process.env.WEBHOOK_URL,  // 자신의 웹훅 URL
+})
+```
+
+---
+
+#### S-2. 포트원 결제 웹훅 서명 미검증
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | 결제 성공 이벤트(`Payment.Paid`)를 위조하면 구독이 무료로 활성화됨 |
+| **해결** | 포트원 v2는 `webhook-id`, `webhook-timestamp`, `webhook-signature` 헤더를 제공. raw body(문자열)를 HMAC-SHA256으로 검증해야 함 |
+| **구현** | `next.js`에서 `req.text()`로 raw body 먼저 읽고 검증 후 JSON 파싱 |
+
+```typescript
+// 포트원 v2 서명 검증
+import crypto from 'crypto'
+const rawBody = await req.text()
+const signingInput = `${webhookId}.${webhookTimestamp}.${rawBody}`
+const expected = crypto.createHmac('sha256', process.env.PORTONE_WEBHOOK_SECRET!)
+  .update(signingInput).digest('base64')
+const signatures = webhookSignature.split(' ')
+if (!signatures.some(sig => sig === expected)) throw new Error('Invalid signature')
+```
+
+---
+
+#### S-3. `allowedApps` 서버 allowlist 미검증
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | 클라이언트가 `allowedApps`에 `com.android.chrome`, `com.google.android.youtube` 등을 직접 전송하면 금지 앱이 허용됨 |
+| **해결** | 서버에서 허용 가능한 앱 목록을 하드코딩하고, 요청값이 그 안에 없으면 400 반환 |
+
+```typescript
+// src/lib/policies/allowed-apps.ts
+export const ALWAYS_BLOCKED = new Set([
+  'com.android.chrome', 'com.sec.android.app.sbrowser',
+  'com.google.android.youtube', 'com.android.vending', // Play Store
+  'com.google.android.gms',  // GMS
+])
+export const PARENT_TOGGLEABLE = new Set([
+  'com.kakao.talk', 'com.nhn.android.search',
+  'com.samsung.android.calendar', 'com.google.android.apps.youtubemusic',
+  'com.iloen.melon', 'com.sec.android.app.popupcalculator',
+])
+// API에서: allowedApps.every(pkg => PARENT_TOGGLEABLE.has(pkg)) 검증
+```
+
+---
+
+#### S-4. 기기 소유권 검증 누락 위험
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `/api/devices/[id]/*`, `/api/schedule/[deviceId]/*` 중 하나라도 소유권 확인이 빠지면 다른 부모의 기기를 조작할 수 있음 |
+| **해결** | 공통 헬퍼 함수로 강제화 — 직접 Prisma 쿼리마다 검증하지 말고 한 함수에서 처리 |
+
+```typescript
+// src/lib/auth-helpers.ts
+export async function requireDeviceOwnership(deviceId: string, userId: string) {
+  const device = await prisma.device.findUnique({ where: { id: deviceId } })
+  if (!device) throw new NotFoundError('기기를 찾을 수 없습니다')
+  if (device.userId !== userId) throw new ForbiddenError('권한이 없습니다')
+  return device
+}
+// 모든 /api/devices/[id]/* 라우트 최상단에서 반드시 호출
+```
+
+---
+
+### 🟡 출시 전 완료
+
+#### S-5. Vercel Cron 인증 취약
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `CRON_SECRET`이 노출되면 누구나 `/api/billing/charge`를 외부에서 호출해 중복 청구 가능 |
+| **해결** | `Authorization: Bearer <CRON_SECRET>` 검증 + idempotency 키(결제월 기준) + 실행 로그 |
+
+```typescript
+// idempotency: 같은 달에 이미 결제됐으면 스킵
+const currentPeriod = new Date().toISOString().slice(0, 7) // "2026-06"
+if (subscription.lastChargedPeriod === currentPeriod) continue
+```
+
+---
+
+#### S-6. `free` 정책이 너무 느슨함
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `kioskCustomLauncherEnabled: false`로 일반 런처 복귀 시 Play Store, 브라우저, 설정 > 계정 추가 > 구글 계정으로 우회 가능 |
+| **해결** | 자유시간에도 아래 항목은 반드시 유지 |
+
+```json
+// free 정책에도 유지해야 할 항목
+{
+  "factoryResetDisabled": true,
+  "modifyAccountsDisabled": true,
+  "safeBootDisabled": true,
+  "untrustedAppsPolicy": { "untrustedAppInstallSources": "DISALLOW_INSTALL" },
+  "applications": [
+    { "packageName": "com.android.vending", "installType": "BLOCKED" },
+    { "packageName": "com.sec.android.app.sbrowser", "installType": "BLOCKED" },
+    { "packageName": "com.android.chrome", "installType": "BLOCKED" }
+  ]
+}
+```
+
+---
+
+#### S-7. `expired` 정책 KIOSK 앱 의존 위험
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `com.gongshin.renewal_notice` 앱이 미설치 상태에서 expired 정책 적용 시 기기가 빈 화면/이상 상태가 될 수 있음 |
+| **해결** | expired 정책 적용 전 앱 설치 상태 확인 + 미설치 시 fallback으로 전화만 허용하는 단순 정책 사용 |
+
+```typescript
+// expired 정책 적용 전 체크
+const deviceInfo = await getDeviceInfo(device.amapiDeviceId)
+const renewalAppInstalled = deviceInfo.installedApps
+  ?.some(a => a.packageName === 'com.gongshin.renewal_notice')
+const policyToApply = renewalAppInstalled ? 'expired' : 'expired-simple'
+```
+
+---
+
+#### S-8. 서비스 계정 키 관리 위험
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `.env.local`에 SA 키 JSON 경로/내용을 보관하면 환경변수 유출 시 AMAPI 전체 제어권이 넘어감 |
+| **단기** | Vercel 환경변수에 SA 키 JSON 내용(문자열)을 저장 — 파일시스템 노출 없음 |
+| **장기** | GCP Workload Identity Federation 사용 시 SA 키 자체가 불필요 (Vercel OIDC 연동) |
+| **최소 권한** | SA 역할을 `roles/androidmanagement.viewer` + `roles/androidmanagement.admin`으로 분리, Pub/Sub은 별도 SA |
+
+---
+
+### 🟢 Phase 2 대응
+
+#### S-9. 위치 추적 법적 리스크
+
+| 항목 | 내용 |
+|---|---|
+| **법령** | 위치정보법 제9조 — 위치기반서비스 신고 필수 (방송통신위원회) |
+| **필수 조치** | ① 위치기반서비스 신고 → ② 보호자·아동 동의 수집 → ③ 위치 로그 보관기간 제한 (최대 1년) → ④ 아이에게 수집 사실 고지 기능 |
+| **구현** | `LocationLog` 모델에 `expiresAt` 필드 추가, 만료된 로그 자동 삭제 cron |
+
+---
+
+#### S-10. 공장초기화 차단 시 복구 정책 필요
+
+| 항목 | 내용 |
+|---|---|
+| **위험** | `factoryResetDisabled: true` 상태에서 구독 해지 후 기기를 초기화하려는 사용자가 방법을 모르면 민원/법적 문제 발생 |
+| **해결** | 구독 해지 플로우에서 반드시 "기기 복구 방법" 안내 + 해지 시 expired 정책 → open 정책(제한 없는) 순서로 전환 |
+
+```
+해지 플로우:
+1. 해지 신청 → 30일 유예 시작
+2. 유예 만료 → expired 정책 (전화만)
+3. 부모가 "기기 반환/초기화" 요청 시 → 제한 없는 정책으로 전환 후 기기 unenroll
+4. AMAPI enterprises.devices.delete() 호출 → 기기 MDM 해제 + 초기화 가능 상태
+```
+
+---
+
+### 보안 구현 우선순위 요약
+
+| 우선순위 | 항목 | 관련 파일 | 완료 기준 |
+|---|---|---|---|
+| 🔴 P0 | Pub/Sub 웹훅 OIDC 검증 | `api/devices/webhook` | Google 서명 검증 통과 |
+| 🔴 P0 | 포트원 웹훅 서명 검증 | `api/billing/webhook` | raw body HMAC 검증 |
+| 🔴 P0 | `allowedApps` 서버 allowlist | `api/devices/[id]/policy` | ALWAYS_BLOCKED 우회 불가 |
+| 🔴 P0 | 기기 소유권 공통 검증 | `lib/auth-helpers.ts` | 모든 device API에 적용 |
+| 🟡 P1 | Cron idempotency + 인증 | `api/billing/charge`, `api/schedule/apply` | 중복 실행 불가 |
+| 🟡 P1 | `free` 정책 보안 강화 | `lib/policies/builder.ts` | Play Store/브라우저 차단 유지 |
+| 🟡 P1 | `expired` 앱 설치 확인 | `lib/amapi.ts` | fallback 정책 있음 |
+| 🟡 P1 | SA 키 → Vercel 환경변수 이전 | Vercel Dashboard | 파일시스템 노출 없음 |
+| 🟢 P2 | 위치정보 법적 처리 | `api/location`, DB | 위치기반서비스 신고 완료 후 |
+| 🟢 P2 | 해지 시 기기 복구 플로우 | `api/billing/cancel` | unenroll API 연동 |
+
+---
+
+## 진행 현황 요약 (2026-06-14 기준)
+
+| 단계 | 항목 | 상태 |
+|---|---|---|
+| **Phase 0** | GCP 프로젝트 + AMAPI 활성화 + SA 키 | ✅ 완료 |
+| **Phase 0** | 엔터프라이즈 생성 + 정책 스크립트 (`poc-setup.ts`, `poc-enroll.ts` 등) | ✅ 완료 |
+| **Phase 0** | QR 토큰 발급 + HTML/PNG 생성 | ✅ 완료 |
+| **Phase 0** | 갤럭시 기기 등록 (QR 스캔) | ⏳ 보류 — 엔터프라이즈 trust ramp-up |
+| **Phase 0** | Knox Admin Portal + KPE 라이선스 | 🔒 보류 — 삼성 사내망에서 별도 진행 |
+| **Phase 1** | Next.js 16 + TypeScript + Tailwind 4 + Prisma 6 세팅 | ✅ 완료 |
+| **Phase 1** | Supabase PostgreSQL 연결 + Prisma schema DB push | ✅ 완료 |
+| **Phase 1** | NextAuth.js (next-auth v5) 카카오 로그인 연동 | ✅ 완료 |
+| **Phase 1** | Google OAuth 로그인 연동 | ⬜ 미완 |
+| **Phase 1** | `lib/amapi.ts` + AMAPI 서버 연동 | ⬜ 미완 |
+| **Phase 1** | 부모 콘솔 UI (dashboard, apps, schedule) | ⬜ 미완 |
+| **Phase 1** | 결제 연동 (포트원 v2) | ⬜ 미완 |
+| **Phase 1** | 스케줄 cron + Vercel 배포 | ⬜ 미완 |
 
 *최종 수정: 2026-06-14*

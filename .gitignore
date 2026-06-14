@@ -1,0 +1,6 @@
+sa-key.json
+node_modules
+.DS_Store
+# 루트 레벨 임시 패키지 (gongshin-saas/에 정식 포함됨)
+/package.json
+/package-lock.json
